@@ -1,0 +1,545 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>README Preview - GitHub Style</title>
+    <link rel="icon" type="image/png" href="https://i.postimg.cc/25MD4NLR/telechargement-(2).png">
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans", Helvetica, Arial, sans-serif;
+            font-size: 16px;
+            line-height: 1.5;
+            color: #c9d1d9;
+            background-color: #0d1117;
+            min-height: 100vh;
+        }
+
+        .github-header {
+            background: #161b22;
+            border-bottom: 1px solid #30363d;
+            padding: 16px 32px;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .github-logo {
+            width: 32px;
+            height: 32px;
+            fill: #f0f6fc;
+        }
+
+        .repo-path {
+            font-size: 14px;
+            color: #8b949e;
+        }
+
+        .repo-path a {
+            color: #58a6ff;
+            text-decoration: none;
+        }
+
+        .repo-path a:hover {
+            text-decoration: underline;
+        }
+
+        .repo-nav {
+            background: #161b22;
+            border-bottom: 1px solid #30363d;
+            padding: 0 32px;
+            display: flex;
+            gap: 8px;
+        }
+
+        .repo-tab {
+            padding: 12px 16px;
+            color: #8b949e;
+            font-size: 14px;
+            border-bottom: 2px solid transparent;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .repo-tab:hover {
+            color: #c9d1d9;
+            border-bottom-color: #30363d;
+        }
+
+        .repo-tab.active {
+            color: #f0f6fc;
+            border-bottom-color: #f78166;
+            font-weight: 600;
+        }
+
+        .main-container {
+            max-width: 1280px;
+            margin: 0 auto;
+            padding: 24px 32px;
+            display: grid;
+            grid-template-columns: 1fr 296px;
+            gap: 24px;
+        }
+
+        .content-area {
+            min-width: 0;
+        }
+
+        .file-header {
+            background: #161b22;
+            border: 1px solid #30363d;
+            border-radius: 6px 6px 0 0;
+            border-bottom: none;
+            padding: 12px 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .file-name {
+            font-size: 14px;
+            color: #8b949e;
+        }
+
+        .file-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .btn {
+            background: #21262d;
+            border: 1px solid #30363d;
+            color: #c9d1d9;
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 12px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .btn:hover {
+            background: #30363d;
+            border-color: #8b949e;
+        }
+
+        .readme-container {
+            background: #161b22;
+            border: 1px solid #30363d;
+            border-radius: 0 0 6px 6px;
+            padding: 32px;
+        }
+
+        .markdown-body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+            font-size: 16px;
+            line-height: 1.6;
+            color: #c9d1d9;
+            word-wrap: break-word;
+        }
+
+        .markdown-body h1 {
+            font-size: 2em;
+            border-bottom: 1px solid #30363d;
+            padding-bottom: 0.3em;
+            margin-bottom: 16px;
+            margin-top: 0;
+            font-weight: 600;
+            color: #f0f6fc;
+        }
+
+        .markdown-body h2 {
+            font-size: 1.5em;
+            border-bottom: 1px solid #30363d;
+            padding-bottom: 0.3em;
+            margin-top: 24px;
+            margin-bottom: 16px;
+            font-weight: 600;
+            color: #f0f6fc;
+        }
+
+        .markdown-body h3 {
+            font-size: 1.25em;
+            margin-top: 24px;
+            margin-bottom: 16px;
+            font-weight: 600;
+            color: #f0f6fc;
+        }
+
+        .markdown-body p {
+            margin-bottom: 16px;
+        }
+
+        .markdown-body a {
+            color: #58a6ff;
+            text-decoration: none;
+        }
+
+        .markdown-body a:hover {
+            text-decoration: underline;
+        }
+
+        .markdown-body img {
+            max-width: 100%;
+            height: auto;
+            border-radius: 6px;
+        }
+
+        .markdown-body code {
+            background: rgba(110, 118, 129, 0.4);
+            padding: 0.2em 0.4em;
+            border-radius: 6px;
+            font-family: ui-monospace, SFMono-Regular, "SF Mono", Consolas, monospace;
+            font-size: 85%;
+        }
+
+        .markdown-body pre {
+            background: #161b22;
+            border: 1px solid #30363d;
+            border-radius: 6px;
+            padding: 16px;
+            overflow: auto;
+            margin-bottom: 16px;
+        }
+
+        .markdown-body pre code {
+            background: transparent;
+            padding: 0;
+            font-size: 100%;
+            display: block;
+            line-height: 1.45;
+        }
+
+        .markdown-body ul, .markdown-body ol {
+            padding-left: 2em;
+            margin-bottom: 16px;
+        }
+
+        .markdown-body li {
+            margin-bottom: 0.25em;
+        }
+
+        .markdown-body table {
+            border-collapse: collapse;
+            width: 100%;
+            margin-bottom: 16px;
+            display: block;
+            overflow: auto;
+        }
+
+        .markdown-body table th,
+        .markdown-body table td {
+            border: 1px solid #30363d;
+            padding: 6px 13px;
+        }
+
+        .markdown-body table th {
+            background: #161b22;
+            font-weight: 600;
+        }
+
+        .markdown-body table tr:nth-child(2n) {
+            background: #0d1117;
+        }
+
+        .markdown-body hr {
+            height: 0.25em;
+            padding: 0;
+            margin: 24px 0;
+            background-color: #30363d;
+            border: 0;
+        }
+
+        .markdown-body blockquote {
+            padding: 0 1em;
+            color: #8b949e;
+            border-left: 0.25em solid #30363d;
+            margin-bottom: 16px;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 600;
+            margin: 2px;
+        }
+
+        .sidebar {
+            position: sticky;
+            top: 24px;
+            height: fit-content;
+        }
+
+        .sidebar-section {
+            background: #161b22;
+            border: 1px solid #30363d;
+            border-radius: 6px;
+            padding: 16px;
+            margin-bottom: 16px;
+        }
+
+        .sidebar-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: #f0f6fc;
+            margin-bottom: 12px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid #30363d;
+        }
+
+        .sidebar-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 0;
+            font-size: 12px;
+            color: #8b949e;
+        }
+
+        .sidebar-item:hover {
+            color: #58a6ff;
+        }
+
+        .about-text {
+            font-size: 12px;
+            color: #8b949e;
+            line-height: 1.5;
+        }
+
+        .topic-tag {
+            display: inline-block;
+            padding: 4px 10px;
+            background: rgba(56, 139, 253, 0.15);
+            color: #58a6ff;
+            border-radius: 20px;
+            font-size: 12px;
+            margin: 2px;
+            cursor: pointer;
+        }
+
+        .topic-tag:hover {
+            background: rgba(56, 139, 253, 0.3);
+        }
+
+        .highlight-box {
+            background: rgba(56, 139, 253, 0.1);
+            border: 1px solid #388bfd;
+            border-radius: 6px;
+            padding: 16px;
+            margin: 16px 0;
+        }
+
+        .warning-box {
+            background: rgba(210, 153, 34, 0.1);
+            border: 1px solid #d29922;
+            border-radius: 6px;
+            padding: 16px;
+            margin: 16px 0;
+        }
+
+        @media (max-width: 1024px) {
+            .main-container {
+                grid-template-columns: 1fr;
+            }
+            .sidebar {
+                display: none;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .github-header,
+            .repo-nav {
+                padding: 12px 16px;
+            }
+            .main-container {
+                padding: 16px;
+            }
+            .readme-container {
+                padding: 16px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header class="github-header">
+        <svg class="github-logo" viewBox="0 0 16 16" aria-hidden="true">
+            <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"></path>
+        </svg>
+        <div class="repo-path">
+            <a href="#">xql.dev</a> / <a href="#">crypto-heatmap</a>
+        </div>
+    </header>
+
+    <nav class="repo-nav">
+        <div class="repo-tab active">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+                <path d="M2 2.5A2.5 2.5 0 014.5 0h8.75a.75.75 0 01.75.75v12.5a.75.75 0 01-.75.75h-2.5a.75.75 0 110-1.5h1.75v-2h-8a1 1 0 00-.714 1.7.75.75 0 01-1.072 1.05A2.495 2.495 0 012 11.5v-9zm10.5-1V9h-8c-.356 0-.694.074-1 .208V2.5a1 1 0 011-1h8zM5 12.25v3.25a.25.25 0 00.4.2l1.45-1.087a.25.25 0 01.3 0L8.6 15.7a.25.25 0 00.4-.2v-3.25a.25.25 0 00-.25-.25h-3.5a.25.25 0 00-.25.25z"/>
+            </svg>
+            Code
+        </div>
+        <div class="repo-tab">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+                <path d="M8 9.5a1.5 1.5 0 100-3 1.5 1.5 0 000 3z"/>
+                <path d="M8 0a8 8 0 100 16A8 8 0 008 0zM1.5 8a6.5 6.5 0 1111 0 6.5 6.5 0 01-11 0z"/>
+            </svg>
+            Issues 3
+        </div>
+        <div class="repo-tab">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+                <path d="M7.177 3.073L9.573.677A.25.25 0 0110 .854v4.792a.25.25 0 01-.427.177L7.177 3.427a.25.25 0 010-.354zM3.75 2.5a.75.75 0 100 1.5.75.75 0 000-1.5zm-2.25.75a2.25 2.25 0 113 2.122v5.256a2.251 2.251 0 11-1.5 0V5.372A2.25 2.25 0 001.5 3.25zM11 2.5h-1V4h1a1 1 0 011 1v5.628a2.251 2.251 0 101.5 0V5A2.5 2.5 0 0011 2.5zm1 10.25a.75.75 0 111.5 0 .75.75 0 01-1.5 0zM3.75 12a.75.75 0 100 1.5.75.75 0 000-1.5z"/>
+            </svg>
+            Pull requests 1
+        </div>
+        <div class="repo-tab">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+                <path d="M1.75 1.5a.75.75 0 00-.75.75v9.5c0 .414.336.75.75.75h9.5a.75.75 0 00.75-.75v-9.5a.75.75 0 00-.75-.75h-9.5z"/>
+            </svg>
+            Actions
+        </div>
+        <div class="repo-tab">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+                <path d="M8 16A8 8 0 108 0a8 8 0 000 16zm.25-11.25h1.5a.75.75 0 010 1.5h-.75v2.75a.75.75 0 01-1.5 0v-3.5a.75.75 0 01.75-.75z"/>
+            </svg>
+            Projects
+        </div>
+        <div class="repo-tab">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+                <path d="M8 0a8 8 0 100 16A8 8 0 008 0zM1.5 8a6.5 6.5 0 1113 0 6.5 6.5 0 01-13 0z"/>
+            </svg>
+            Security
+        </div>
+        <div class="repo-tab">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+                <path d="M7.467 133.7c-.618 0-1.199-.388-1.414-1.003-.231-.646.106-1.361.752-1.592l6.104-2.215 6.105 2.215c.646.231.983.946.752 1.592-.231.646-.946.983-1.592.752l-5.265-1.91-5.265 1.91c-.138.05-.281.074-.423.074zm5.891-5.117c-.618 0-1.199-.388-1.414-1.003-.231-.646.106-1.361.752-1.592l6.104-2.215 6.105 2.215c.646.231.983.946.752 1.592-.231.646-.946.983-1.592.752l-5.265-1.91-5.265 1.91c-.138.05-.281.074-.423.074z"/>
+            </svg>
+            Insights
+        </div>
+    </nav>
+
+    <div class="main-container">
+        <div class="content-area">
+            <div class="file-header">
+                <div class="file-name">
+                    <svg width="16" height="16" viewBox="0 0 16 16" fill="#8b949e" style="vertical-align: middle; margin-right: 8px;">
+                        <path d="M2 1.75C2 .784 2.784 0 3.75 0h6.586c.464 0 .909.184 1.237.513l2.914 2.914c.329.328.513.773.513 1.237v9.586A1.75 1.75 0 0113.25 16H3.75A1.75 1.75 0 012 14.25V1.75z"/>
+                    </svg>
+                    README.md
+                </div>
+                <div class="file-actions">
+                    <button class="btn">Raw</button>
+                    <button class="btn">Blame</button>
+                    <button class="btn">
+                        <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+                            <path d="M8.75 2.75a.75.75 0 00-1.5 0v5.69L3.28 5.78a.75.75 0 00-1.06 1.06l5.25 5.25a.75.75 0 001.06 0l5.25-5.25a.75.75 0 00-1.06-1.06L8.75 8.44V2.75z"/>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+
+            <div class="readme-container">
+                <div class="markdown-body" id="readme-content">
+                    <p>Loading README.md...</p>
+                </div>
+            </div>
+        </div>
+
+        <aside class="sidebar">
+            <div class="sidebar-section">
+                <div class="sidebar-title">About</div>
+                <div class="about-text">
+                    🔥 Real-time cryptocurrency market performance visualization with an interactive heatmap
+                </div>
+                <div style="margin-top: 16px;">
+                    <span class="topic-tag">crypto</span>
+                    <span class="topic-tag">heatmap</span>
+                    <span class="topic-tag">dashboard</span>
+                    <span class="topic-tag">tradingview</span>
+                    <span class="topic-tag">coingecko</span>
+                    <span class="topic-tag">vanilla-js</span>
+                </div>
+            </div>
+
+            <div class="sidebar-section">
+                <div class="sidebar-title">Releases</div>
+                <div class="sidebar-item">
+                    <svg width="16" height="16" viewBox="0 0 16 16" fill="#8b949e">
+                        <path d="M14.5 1.5v13a.5.5 0 01-.5.5h-12a.5.5 0 01-.5-.5v-13a.5.5 0 01.5-.5h12a.5.5 0 01.5.5z"/>
+                    </svg>
+                    <span>No releases published</span>
+                </div>
+            </div>
+
+            <div class="sidebar-section">
+                <div class="sidebar-title">Packages</div>
+                <div class="sidebar-item">
+                    <svg width="16" height="16" viewBox="0 0 16 16" fill="#8b949e">
+                        <path d="M8 0a8 8 0 100 16A8 8 0 008 0z"/>
+                    </svg>
+                    <span>No packages published</span>
+                </div>
+            </div>
+
+            <div class="sidebar-section">
+                <div class="sidebar-title">Languages</div>
+                <div class="sidebar-item" style="flex-direction: column; align-items: flex-start;">
+                    <div style="width: 100%; height: 8px; background: #161b22; border-radius: 4px; overflow: hidden; margin-bottom: 8px;">
+                        <div style="width: 60%; height: 100%; background: #e34c26; float: left;"></div>
+                        <div style="width: 25%; height: 100%; background: #563d7c; float: left;"></div>
+                        <div style="width: 15%; height: 100%; background: #f1e05a; float: left;"></div>
+                    </div>
+                    <div style="font-size: 12px; color: #8b949e;">
+                        <span style="color: #e34c26;">●</span> HTML 60%
+                    </div>
+                    <div style="font-size: 12px; color: #8b949e;">
+                        <span style="color: #563d7c;">●</span> CSS 25%
+                    </div>
+                    <div style="font-size: 12px; color: #8b949e;">
+                        <span style="color: #f1e05a;">●</span> JavaScript 15%
+                    </div>
+                </div>
+            </div>
+        </aside>
+    </div>
+
+    <script>
+        async function loadReadme() {
+            const contentDiv = document.getElementById('readme-content');
+            try {
+                const response = await fetch('README.md');
+                if (!response.ok) {
+                    throw new Error('Failed to load README.md');
+                }
+                const markdown = await response.text();
+                marked.setOptions({
+                    breaks: true,
+                    gfm: true,
+                    headerIds: true
+                });
+                contentDiv.innerHTML = marked.parse(markdown);
+            } catch (error) {
+                contentDiv.innerHTML = '<p style="color: #ef4444;">Error loading README.md. Make sure the file exists in the same folder.</p><p style="color: #8b949e; font-size: 12px;">' + error.message + '</p>';
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', loadReadme);
+
+        document.querySelector('.btn').addEventListener('click', function() {
+            if (this.textContent.includes('Refresh')) {
+                loadReadme();
+            }
+        });
+    </script>
+</body>
+</html>
