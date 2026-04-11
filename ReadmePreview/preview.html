@@ -517,7 +517,7 @@
         async function loadReadme() {
             const contentDiv = document.getElementById('readme-content');
             try {
-                const response = await fetch('README.md');
+                const response = await fetch('../README.md');
                 if (!response.ok) {
                     throw new Error('Failed to load README.md');
                 }

@@ -908,6 +908,7 @@
             margin-bottom: 8px;
         }
     </style>
+    <script src="https://unpkg.com/lightweight-charts@4.1.0/dist/lightweight-charts.standalone.production.js"></script>
 </head>
 <body>
     <div class="loader-container" id="loader">
@@ -993,7 +994,7 @@
         const CONFIG = {
             API_URL: 'https://api.coingecko.com/api/v3',
             DEFAULT_LIMIT: 50,
-            REFRESH_INTERVAL: 60000,
+            REFRESH_INTERVAL: 120000,
             STORAGE_KEY: 'cryptoHeatmapPrefs'
         };
         console.log('%cCONFIG Loaded', 'color: #666; font-size: 10px;');
@@ -1003,7 +1004,73 @@
             filteredCoins: [],
             limit: CONFIG.DEFAULT_LIMIT,
             searchQuery: '',
-            loading: false
+            loading: false,
+            ws: null,
+            subscribedAssets: new Set()
+        };
+
+        const initWebSocket = () => {
+            try {
+                const ws = new WebSocket(CONFIG.WS_URL);
+                ws.onopen = () => {
+                    console.log('%cWebSocket connected', 'color: #22c55e; font-size: 10px;');
+                };
+                ws.onmessage = (event) => {
+                    const data = JSON.parse(event.data);
+                    updateRealTimePrices(data);
+                };
+                ws.onerror = (error) => {
+                    console.error('WebSocket error:', error);
+                };
+                ws.onclose = () => {
+                    console.log('%cWebSocket disconnected, reconnecting...', 'color: #ef4444; font-size: 10px;');
+                    setTimeout(initWebSocket, 5000);
+                };
+                state.ws = ws;
+            } catch (e) {
+                console.error('Failed to init WebSocket:', e);
+            }
+        };
+
+        const subscribeToAssets = (assets) => {
+            if (!state.ws || state.ws.readyState !== WebSocket.OPEN) return;
+            const assetsStr = assets.join(',');
+            state.ws.send(JSON.stringify({
+                type: 'subscribe',
+                assets: assetsStr
+            }));
+            assets.forEach(a => state.subscribedAssets.add(a));
+        };
+
+        const updateRealTimePrices = (priceData) => {
+            state.coins.forEach(coin => {
+                const assetId = coin.id.toLowerCase().replace(/-/g, '');
+                const newPrice = priceData[coin.symbol.toLowerCase()] || priceData[assetId];
+                if (newPrice) {
+                    const oldPrice = coin.current_price;
+                    coin.current_price = parseFloat(newPrice);
+                    const change = ((coin.current_price - oldPrice) / oldPrice) * 100;
+                    updateCoinBlockVisuals(coin, change);
+                }
+            });
+        };
+
+        const updateCoinBlockVisuals = (coin, flashChange) => {
+            const blocks = document.querySelectorAll('.coin-block');
+            blocks.forEach(block => {
+                if (block.dataset.coinId === coin.id) {
+                    const priceEl = block.querySelector('.coin-price');
+                    if (priceEl) {
+                        priceEl.textContent = formatPrice(coin.current_price);
+                        const flashColor = flashChange > 0 ? 'rgba(34, 197, 94, 0.3)' : 'rgba(239, 68, 68, 0.3)';
+                        block.style.background = flashColor;
+                        setTimeout(() => {
+                            block.style.background = '';
+                            block.style.transition = 'background 0.5s ease';
+                        }, 300);
+                    }
+                }
+            });
         };
 
         const elements = {
@@ -1073,13 +1140,58 @@
             }
         };
 
+        const STABLECOINS_AND_EXCLUDES = [
+            'usd', 'usdc', 'usdt', 'usdd', 'dai', 'tusd', 'busd', 'gusd', 'husd',
+            'eurt', 'eurc', 'usdp', 'usdx', 'susd', 'ousd', 'alusd', 'frax', 'mim',
+            'lusd', 'pyusd', 'rlusd', 'usdy', 'ustb', 'usyc', 'usdf', 'usdg', 'buidl',
+            'usde', 'usdtb', 'bfusd', 'eutbl', 'jtrsy', 'figr_heloc', 'bcap', 'rain',
+            'hash', 'night', 'cc', 'm', 'stable', 'gho', 'xaut', 'pi', 'jup', 'xdc',
+            'jst', 'bdx', 'flr', 'nexo', 'kas', 'gt', 'kcs', 'htx', 'okb', 'mnt',
+            'wbt', 'leo', 'yld', 'siren', 'provenance', 'midnight', 'ousg', 'superstate',
+            'spiko', 'bitget', 'canton', 'memecore', 'figure', 'whitebit', 'helium',
+            'renderscript', 'ondo', 'ethena', 'anemoy', 'janus', 'paxos', 'pax', 'ust',
+            'cdai', 'cusdc', 'reth', 'seth', 'steth', 'cbeth', 'wbeth', 'meth', 'ankreth',
+            'usdai', 'fdusd', 'tgbp', 'taud', 'thkd', 'tcad', 'ceur', 'aaveusdc', 'aavedai',
+            'ceth', 'cbtc', 'cusdt', 'musd', 'mimatic', 'dola', 'alcx', 'agix', 'hype',
+            'virtuals', 'hyperliquid', 'ip', 'bera', 'plume', 'story', 'babylon',
+            'movement', 'initia', 'corn', 'hemi', 'megaeth', 'cronos', 'toncoin',
+            'sonic', 'injective', 'sei', 'mantle', 'berachain', 'arbitrum', 'optimism',
+            'avalanche', 'fantom', 'canto', 'metis', 'aurora', 'harmony', 'iotex',
+            'oasis', 'celo', 'moonbeam', 'astar', 'acala', 'karura', 'shiden',
+            'celer', 'layerzero', 'wormhole', 'axelar', 'synapse', 'hop', 'across',
+            'stargate', 'connext', 'bungee', 'socket', 'lifi', 'rango', 'squid',
+            'swing', 'pyth', 'chainlink', 'api3', 'umbrella', 'band', 'tellor',
+            'redstone', 'flux', 'dia', 'orakl', 'seda', 'switchboard', 'upshot',
+            'worldcoin', 'world', 'wld', 'samoyed', 'sam', 'bonk', 'pepe', 'shib',
+            'doge', 'floki', 'elon', 'saitama', 'tsuka', 'volt', 'safemoon',
+            'virtual', 'virtuals', 'aixbt', 'zerebro', 'luna', 'lunc', 'terra',
+            'ftt', 'ftx', 'cel', 'celsius', 'mim', 'spell', 'abracadabra',
+            'tomb', 'tshare', '2omb', '3share', 'basis', 'bac', 'bas',
+            'ust', 'uusd', 'yusd', 'xusd', 'nusd', 'susd', 'husd', 'vusd',
+            'canto', 'note', 'flow', 'flowusd', 'aptos', 'apt', 'sui',
+            'sei', 'inj', 'injective', 'dydx', 'dydxusd', 'gmx', 'gmxusd',
+            'snx', 'synthetix', 'perp', 'perpetual', 'velo', 'velodrome'
+        ];
+
+        const isValidCoin = (coin) => {
+            if (!coin || !coin.symbol) return false;
+            const symbol = coin.symbol.toLowerCase();
+            const name = (coin.name || '').toLowerCase();
+            if (STABLECOINS_AND_EXCLUDES.includes(symbol)) return false;
+            if (name.includes('fund') || name.includes('usd') && name.includes('treasury')) return false;
+            if (name.includes('stable') || name.includes('dollar')) return false;
+            if (!coin.image || coin.market_cap === null || coin.market_cap === undefined) return false;
+            return true;
+        };
+
         const fetchCoins = async (limit = 50) => {
             try {
+                const fetchLimit = Math.min(limit * 3, 250);
                 const response = await fetch(
                     `${CONFIG.API_URL}/coins/markets?` +
                     `vs_currency=usd&` +
                     `order=market_cap_desc&` +
-                    `per_page=${limit}&` +
+                    `per_page=${fetchLimit}&` +
                     `page=1&` +
                     `sparkline=false&` +
                     `price_change_percentage=24h`
@@ -1088,7 +1200,8 @@
                     throw new Error(`HTTP error! status: ${response.status}`);
                 }
                 const data = await response.json();
-                return data;
+                const validCoins = data.filter(coin => isValidCoin(coin) && !checkTradingViewSymbol(coin.symbol));
+                return validCoins.slice(0, limit);
             } catch (error) {
                 console.error('Error fetching coins:', error);
                 throw error;
@@ -1104,6 +1217,297 @@
                 console.error('Error fetching global data:', error);
                 return null;
             }
+        };
+
+        const fetchCoinChart = async (coinId, days = 7) => {
+            try {
+                const response = await fetch(`${CONFIG.API_URL}/coins/${coinId}/market_chart?vs_currency=usd&days=${days}`);
+                if (!response.ok) throw new Error('Failed to fetch chart data');
+                const data = await response.json();
+                return data.prices;
+            } catch (error) {
+                console.error('Error fetching chart data:', error);
+                return null;
+            }
+        };
+
+        let currentChart = null;
+        let currentSeries = null;
+
+        const createTradingViewChart = (prices, coin, timeframe = '7', container) => {
+            if (!prices || prices.length < 2) return null;
+            while (container.firstChild) {
+                container.removeChild(container.firstChild);
+            }
+            const wrapper = createElement('div');
+            wrapper.style.cssText = 'width: 100%; display: flex; flex-direction: column; gap: 12px;';
+            const toolbar = createElement('div');
+            toolbar.style.cssText = 'display: flex; align-items: center; justify-content: space-between; padding: 8px 12px; background: var(--bg-secondary); border-radius: 8px; flex-wrap: wrap; gap: 8px;';
+            const coinInfo = createElement('div');
+            coinInfo.style.cssText = 'display: flex; align-items: center; gap: 8px;';
+            const coinImg = createElement('img');
+            coinImg.src = coin.image;
+            coinImg.style.cssText = 'width: 24px; height: 24px; border-radius: 50%;';
+            const coinName = createElement('span');
+            coinName.textContent = `${coin.symbol.toUpperCase()}/USD`;
+            coinName.style.cssText = 'font-weight: 600; color: var(--text-primary); font-size: 14px;';
+            coinInfo.appendChild(coinImg);
+            coinInfo.appendChild(coinName);
+            const tfButtons = createElement('div');
+            tfButtons.style.cssText = 'display: flex; gap: 4px;';
+            const timeframes = [
+                { label: '1D', value: '1', active: timeframe === '1' },
+                { label: '7D', value: '7', active: timeframe === '7' },
+                { label: '30D', value: '30', active: timeframe === '30' },
+                { label: '90D', value: '90', active: timeframe === '90' },
+                { label: '1Y', value: '365', active: timeframe === '365' }
+            ];
+            timeframes.forEach(tf => {
+                const btn = createElement('button');
+                btn.textContent = tf.label;
+                btn.dataset.days = tf.value;
+                btn.style.cssText = `padding: 4px 10px; border: none; background: ${tf.active ? 'var(--accent-blue)' : 'transparent'}; color: ${tf.active ? 'white' : 'var(--text-secondary)'}; border-radius: 4px; font-size: 12px; font-weight: 500; cursor: pointer; transition: all 0.2s;`;
+                btn.addEventListener('mouseenter', () => {
+                    if (!tf.active) btn.style.background = 'var(--bg-tertiary)';
+                });
+                btn.addEventListener('mouseleave', () => {
+                    if (!tf.active) btn.style.background = 'transparent';
+                });
+                tfButtons.appendChild(btn);
+            });
+            toolbar.appendChild(coinInfo);
+            toolbar.appendChild(tfButtons);
+            const chartTypeSelector = createElement('div');
+            chartTypeSelector.style.cssText = 'display: flex; gap: 4px;';
+            const chartTypes = [
+                { label: 'Area', value: 'area', active: true },
+                { label: 'Line', value: 'line', active: false },
+                { label: 'MA7', value: 'ma7', active: false },
+                { label: 'MA30', value: 'ma30', active: false }
+            ];
+            chartTypes.forEach(ct => {
+                const btn = createElement('button');
+                btn.textContent = ct.label;
+                btn.dataset.type = ct.value;
+                btn.style.cssText = `padding: 4px 10px; border: none; background: ${ct.active ? 'var(--accent-blue)' : 'transparent'}; color: ${ct.active ? 'white' : 'var(--text-secondary)'}; border-radius: 4px; font-size: 12px; font-weight: 500; cursor: pointer; transition: all 0.2s;`;
+                btn.addEventListener('mouseenter', () => {
+                    if (!ct.active) btn.style.background = 'var(--bg-tertiary)';
+                });
+                btn.addEventListener('mouseleave', () => {
+                    if (!ct.active) btn.style.background = 'transparent';
+                });
+                chartTypeSelector.appendChild(btn);
+            });
+            toolbar.insertBefore(chartTypeSelector, tfButtons);
+            const chartContainer = createElement('div');
+            chartContainer.style.cssText = 'height: 380px; background: var(--bg-tertiary); border-radius: 8px; overflow: hidden; position: relative;';
+            const magnifier = createElement('div');
+            magnifier.style.cssText = 'position: absolute; display: none; top: 10px; right: 70px; background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: 8px; padding: 8px 12px; font-size: 11px; color: var(--text-secondary); z-index: 10; pointer-events: none;';
+            chartContainer.appendChild(magnifier);
+            const legend = createElement('div');
+            legend.style.cssText = 'display: flex; align-items: center; justify-content: space-between; padding: 8px 12px; background: var(--bg-secondary); border-radius: 8px; font-size: 12px; color: var(--text-secondary); flex-wrap: wrap; gap: 8px;';
+            const legendPrice = createElement('span');
+            const lastPrice = prices[prices.length - 1][1];
+            const firstPrice = prices[0][1];
+            const priceChange = lastPrice - firstPrice;
+            const priceChangePct = (priceChange / firstPrice) * 100;
+            const isUp = priceChange >= 0;
+            const updateLegendPrice = (value, time) => {
+                while (legendPrice.firstChild) {
+                    legendPrice.removeChild(legendPrice.firstChild);
+                }
+                const symbolStrong = createElement('strong');
+                symbolStrong.textContent = `${coin.symbol.toUpperCase()}/USD`;
+                symbolStrong.style.color = 'var(--text-primary)';
+                legendPrice.appendChild(symbolStrong);
+                const space = document.createTextNode(' ');
+                legendPrice.appendChild(space);
+                const priceSpan = createElement('span');
+                priceSpan.textContent = value;
+                priceSpan.style.color = time ? 'var(--text-primary)' : (isUp ? '#22c55e' : '#ef4444');
+                legendPrice.appendChild(priceSpan);
+                if (time) {
+                    const timeSpace = document.createTextNode(' ');
+                    legendPrice.appendChild(timeSpace);
+                    const timeSpan = createElement('span');
+                    timeSpan.textContent = time;
+                    timeSpan.style.color = 'var(--text-secondary)';
+                    legendPrice.appendChild(timeSpan);
+                } else if (!time) {
+                    const pctSpace = document.createTextNode(' ');
+                    legendPrice.appendChild(pctSpace);
+                    const pctSpan = createElement('span');
+                    pctSpan.textContent = `${isUp ? '+' : ''}${priceChangePct.toFixed(2)}%`;
+                    pctSpan.style.color = isUp ? '#22c55e' : '#ef4444';
+                    legendPrice.appendChild(pctSpan);
+                }
+            };
+            updateLegendPrice(lastPrice < 1 ? lastPrice.toFixed(6) : lastPrice.toFixed(2), null);
+            legend.appendChild(legendPrice);
+            const legendOHLC = createElement('span');
+            const high = Math.max(...prices.map(p => p[1]));
+            const low = Math.min(...prices.map(p => p[1]));
+            legendOHLC.textContent = `O ${firstPrice < 1 ? firstPrice.toFixed(6) : firstPrice.toFixed(2)}  H ${high < 1 ? high.toFixed(6) : high.toFixed(2)}  L ${low < 1 ? low.toFixed(6) : low.toFixed(2)}  C ${lastPrice < 1 ? lastPrice.toFixed(6) : lastPrice.toFixed(2)}`;
+            legend.appendChild(legendOHLC);
+            wrapper.appendChild(toolbar);
+            wrapper.appendChild(chartContainer);
+            wrapper.appendChild(legend);
+            container.appendChild(wrapper);
+            if (typeof LightweightCharts === 'undefined') {
+                const error = createElement('div');
+                error.textContent = 'Chart library not loaded';
+                error.style.cssText = 'text-align: center; padding: 20px; color: var(--text-secondary);';
+                chartContainer.appendChild(error);
+                return { tfButtons };
+            }
+            const calculateMA = (data, period) => {
+                const ma = [];
+                for (let i = 0; i < data.length; i++) {
+                    if (i < period - 1) {
+                        ma.push({ time: data[i].time, value: null });
+                    } else {
+                        let sum = 0;
+                        for (let j = 0; j < period; j++) {
+                            sum += data[i - j].value;
+                        }
+                        ma.push({ time: data[i].time, value: sum / period });
+                    }
+                }
+                return ma;
+            };
+            const chart = LightweightCharts.createChart(chartContainer, {
+                layout: {
+                    background: { color: 'transparent' },
+                    textColor: '#9ca3af',
+                },
+                grid: {
+                    vertLines: { color: 'rgba(55, 65, 81, 0.3)' },
+                    horzLines: { color: 'rgba(55, 65, 81, 0.3)' },
+                },
+                crosshair: {
+                    mode: LightweightCharts.CrosshairMode.Magnet,
+                    vertLine: {
+                        color: '#6b7280',
+                        width: 1,
+                        style: LightweightCharts.LineStyle.Dashed,
+                        labelBackgroundColor: '#6b7280',
+                    },
+                    horzLine: {
+                        color: '#6b7280',
+                        width: 1,
+                        style: LightweightCharts.LineStyle.Dashed,
+                        labelBackgroundColor: '#6b7280',
+                    },
+                },
+                rightPriceScale: {
+                    borderColor: 'rgba(55, 65, 81, 0.5)',
+                },
+                timeScale: {
+                    borderColor: 'rgba(55, 65, 81, 0.5)',
+                    timeVisible: true,
+                    secondsVisible: false,
+                },
+                handleScroll: {
+                    vertTouchDrag: false,
+                },
+            });
+            const lineData = prices.map(p => ({
+                time: Math.floor(p[0] / 1000),
+                value: p[1]
+            }));
+            let currentSeries = null;
+            let maSeries = null;
+            const updateChart = (type) => {
+                if (currentSeries) {
+                    chart.removeSeries(currentSeries);
+                }
+                if (maSeries) {
+                    chart.removeSeries(maSeries);
+                    maSeries = null;
+                }
+                if (type === 'area') {
+                    currentSeries = chart.addAreaSeries({
+                        topColor: isUp ? 'rgba(34, 197, 94, 0.4)' : 'rgba(239, 68, 68, 0.4)',
+                        bottomColor: isUp ? 'rgba(34, 197, 94, 0.0)' : 'rgba(239, 68, 68, 0.0)',
+                        lineColor: isUp ? '#22c55e' : '#ef4444',
+                        lineWidth: 2,
+                    });
+                    currentSeries.setData(lineData);
+                } else if (type === 'line') {
+                    currentSeries = chart.addLineSeries({
+                        color: isUp ? '#22c55e' : '#ef4444',
+                        lineWidth: 2,
+                    });
+                    currentSeries.setData(lineData);
+                } else if (type === 'ma7') {
+                    currentSeries = chart.addLineSeries({
+                        color: isUp ? '#22c55e' : '#ef4444',
+                        lineWidth: 2,
+                    });
+                    currentSeries.setData(lineData);
+                    maSeries = chart.addLineSeries({
+                        color: '#3b82f6',
+                        lineWidth: 1,
+                        lineStyle: LightweightCharts.LineStyle.Dashed,
+                    });
+                    const ma7Data = calculateMA(lineData, 7);
+                    maSeries.setData(ma7Data.filter(d => d.value !== null));
+                } else if (type === 'ma30') {
+                    currentSeries = chart.addLineSeries({
+                        color: isUp ? '#22c55e' : '#ef4444',
+                        lineWidth: 2,
+                    });
+                    currentSeries.setData(lineData);
+                    maSeries = chart.addLineSeries({
+                        color: '#8b5cf6',
+                        lineWidth: 1,
+                        lineStyle: LightweightCharts.LineStyle.Dashed,
+                    });
+                    const ma30Data = calculateMA(lineData, 30);
+                    maSeries.setData(ma30Data.filter(d => d.value !== null));
+                }
+                chart.timeScale().fitContent();
+            };
+            updateChart('area');
+            chart.subscribeCrosshairMove((param) => {
+                if (param.time && currentSeries) {
+                    const data = param.seriesData.get(currentSeries);
+                    if (data) {
+                        const time = new Date(param.time * 1000).toLocaleString();
+                        updateLegendPrice(data.value < 1 ? data.value.toFixed(6) : data.value.toFixed(2), time);
+                        magnifier.style.display = 'block';
+                        magnifier.textContent = `$${data.value < 1 ? data.value.toFixed(6) : data.value.toFixed(2)}`;
+                    }
+                } else {
+                    updateLegendPrice(lastPrice < 1 ? lastPrice.toFixed(6) : lastPrice.toFixed(2), null);
+                    magnifier.style.display = 'none';
+                }
+            });
+            chartContainer.addEventListener('mouseleave', () => {
+                updateLegendPrice(lastPrice < 1 ? lastPrice.toFixed(6) : lastPrice.toFixed(2), null);
+                magnifier.style.display = 'none';
+            });
+            const typeButtons = chartTypeSelector.querySelectorAll('button');
+            typeButtons.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    typeButtons.forEach(b => {
+                        b.style.background = 'transparent';
+                        b.style.color = 'var(--text-secondary)';
+                    });
+                    btn.style.background = 'var(--accent-blue)';
+                    btn.style.color = 'white';
+                    updateChart(btn.dataset.type);
+                });
+            });
+            currentChart = chart;
+            const resizeObserver = new ResizeObserver(() => {
+                chart.applyOptions({
+                    width: chartContainer.clientWidth,
+                    height: chartContainer.clientHeight,
+                });
+            });
+            resizeObserver.observe(chartContainer);
+            return { tfButtons, chart, areaSeries: currentSeries, updateChart };
         };
 
         const getSizeClass = (index, marketCap, totalMarketCap) => {
@@ -1210,26 +1614,143 @@
                 details.appendChild(row4);
                 block.appendChild(details);
 
-                block.addEventListener('click', () => openModal(coin));
+                block.addEventListener('click', async () => await openModal(coin));
                 elements.grid.appendChild(block);
             });
         };
 
-        const openModal = (coin) => {
+        const checkTradingViewSymbol = (symbol) => {
+            const invalidPatterns = [
+                'usd', 'virtual', 'usdc', 'usdt', 'dai', 'mkr', 'aave', 'comp', 'crv',
+                'yfi', 'snx', '1inch', 'sushi', 'uni', 'link', 'band', 'api3',
+                'woo', 'dydx', 'gmx', 'perp', 'velo', 'op', 'arb', 'metis',
+                'imx', 'loopring', 'zk', 'stark', 'scroll', 'linea', 'mantle',
+                'lit', 'litentry',
+                'mode', 'blast', 'zora', 'degen', 'friend', 'lens', 'farcaster',
+                'world', 'worldcoin', 'pyth', 'jup', 'jito', 'marinade', 'lido',
+                'rocket', 'frax', 'convex', 'yearn', 'curve', 'balancer', 'aura',
+                'pendle', 'eigen', 'ethfi', 'renzo', 'kelp', 'swell', 'origin',
+                'ondo', 'blackrock', 'superstate', 'spiko', 'resolv', 'elixir',
+                'usual', 'usdu', 'ena', 'ethena', 'canto', 'sei', 'sui', 'apt',
+                'celestia', 'dym', 'altlayer', 'karak', 'bera', 'plume', 'initia',
+                'movement', 'babylon', 'story', 'corn', 'hemi', 'megaeth',
+                'axelar', 'layerzero', 'wormhole', 'synapse', 'hop', 'across',
+                'stargate', 'connext', 'celer', 'multichain', 'rango', 'squid',
+                'swing', 'socket', 'li.fi', 'bungee', 'refuel', 'gas',
+                'echelon', 'mars', 'neptune', 'uranus', 'pluto', 'venus',
+                'jupiter', 'saturn', 'mercury', 'flare', 'xdc', 'iota', 'miota',
+                'hbar', 'hedera', 'algo', 'algorand', 'xtz', 'tezos', 'eos',
+                'wax', 'waxp', 'hive', 'steem', 'blurt', 'whale', 'leo',
+                'kcs', 'gt', 'bgb', 'mx', 'bitget', 'whitebit', 'coinsbit',
+                'probit', 'hotbit', 'lbank', 'mexc', 'bkex', 'digifinex',
+                'pionex', 'coinw', 'tapbit', 'biconomy', 'poloniex', 'bitmart',
+                'bilaxy', 'latoken', 'coinex', 'ascendex', 'bitrue', 'gate',
+                'okb', 'htx', 'trx', 'tron', 'btt', 'bittorrent', 'win', 'sun',
+                'borg', 'swissborg', 'chsb',
+                'jst', 'usdd', 'tusd', 'usdp', 'gusd', 'busd', 'fdusd', 'husd',
+                'eurs', 'eurusdc', 'eurt', 'ageur', 'ceur', 'par', 'memo', 'money',
+                'pyusd', 'rlusd', 'usdy', 'ustb', 'usyc', 'usdf', 'usdg',
+                'usde', 'usdtb', 'bfusd', 'eutbl', 'jtrsy', 'figr', 'bcap',
+                'rain', 'ousg', 'hash', 'night', 'cc', 'm', 'meme',
+                'safemoon', 'safemars', 'safegalaxy', 'honeypot', 'rugpull',
+                'squid', 'luna', 'lunc', 'ustc', 'mir', 'anc', 'psi',
+                'astro', 'mars', 'nebula', 'cosmos', 'atom', 'osmo',
+                'juno', 'stars', 'stargaze', 'band', 'persistence', 'sentinel',
+                'regen', 'ixo', 'like', 'desmos', 'bitsong', 'omniflix',
+                'passage', 'darc', 'chihuahua', 'cerberus', 'lum', 'vidulum',
+                'kava', 'hard', 'swp', 'pStake', 'rswap', 'rfox', 'vfox',
+                'komodo', 'kmd', 'verus', 'vrsc', 'pirate', 'arrr',
+                'zcash', 'zec', 'monero', 'xmr', 'firo', 'fi', 'dash',
+                'grin', 'beam', 'mimble', 'epic', 'sero', 'dero', 'zano',
+                'zen', 'horizen', 'zencash', 'snowgem', 'safecoin', 'xsg',
+                'vidulum', 'xvs', 'venus', 'pancake', 'cake', 'bunny',
+                'auto', 'beefy', 'belt', 'ellipsis', 'mdex', 'bake',
+                'burger', 'kebab', 'slime', 'cram', 'husky', 'pup',
+                'kitty', 'pig', 'goose', 'duck', 'cow', 'alpaca',
+                'sheep', 'wolf', 'fox', 'ape', 'gorilla', 'cat', 'dog',
+                'shib', 'doge', 'elon', 'akita', 'kishu', 'saitama',
+                'tsuka', 'volt', 'floki', 'babydoge', 'minidoge', 'dogelon',
+                'queen', 'king', 'prince', 'duke', 'lord', 'sir', 'lady',
+                'feg', 'piggy', 'hamster', 'guinea', 'chinchilla', 'ferret',
+                'rabbit', 'turtle', 'tortoise', 'snake', 'lizard', 'iguana',
+                'gecko', 'chameleon', 'frog', 'toad', 'newt', 'salamander',
+                'axolotl', 'dragon', 'wyvern', 'phoenix', 'griffin', 'unicorn',
+                'pegasus', 'centaur', 'minotaur', 'hydra', 'kraken', 'leviathan',
+                'behemoth', 'titan', 'giant', 'colossus', 'juggernaut',
+                'mammoth', 'mastodon', 'brontosaurus', 'trex', 'velociraptor',
+                'pterodactyl', 'triceratops', 'stegosaurus', 'ankylosaurus',
+                'parasaurolophus', 'pachycephalosaurus', 'dilophosaurus',
+                'spinosaurus', 'allosaurus', 'carnotaurus', 'giganotosaurus',
+                'argentinosaurus', 'sauroposeidon', 'brachiosaurus', 'diplodocus',
+                'apatosaurus', 'camarasaurus', 'seismosaurus', 'supersaurus',
+                'ultrasaurus', 'argentinosaurus', 'amphicoelias', 'maraapunisaurus',
+                'turiasaurus', 'rutellum', 'pelorosaurus', 'cetiosaurus',
+                'omeisaurus', 'mamenchisaurus', 'shunosaurus', 'barapasaurus',
+                'patagosaurus', 'volkheimeria', ' Amygdalodon', 'zapalasaurus',
+                'ligabuesaurus', ' andesaurus', ' argentinosaurus', ' mapusaurus',
+                'giganotosaurus', 'tyrannotitan', 'carcharodontosaurus',
+                'acrocanthosaurus', 'saurophaganax', 'echstonosaurus',
+                'siats', 'megaraptora', 'neovenator', 'aerosteon',
+                ' australovenator', 'fukuiraptor', 'megaraptor', 'orkoraptor',
+                'siats', 'torvosaurus', 'spinosaurus', 'baryonyx',
+                'suchomimus', 'irritator', 'anguillima', 'ichthyovenator',
+                'oxalaia', 'sigilmassasaurus', 'cristataurus', 'pijan',
+                'pi', 'pinetwork', 'pi2', 'pi3', 'minepi', 'picoin',
+                'pibase', 'pibridge', 'piwallet', 'piexchange', 'pimarket',
+                'virtuals', 'virtual', 'aixbt', 'zerebro', 'luna', 'lunc',
+                'terra', 'ftt', 'ftx', 'cel', 'celsius', 'mim', 'spell',
+                'abracadabra', 'tomb', 'tshare', '2omb', '3share', 'basis',
+                'bac', 'bas', 'ust', 'uusd', 'yusd', 'xusd', 'nusd',
+                'susd', 'vusd', 'canto', 'note', 'flow', 'flowusd',
+                'aptos', 'apt', 'sui', 'inj', 'injective', 'dydx',
+                'dydxusd', 'gmx', 'gmxusd', 'snx', 'synthetix', 'perp',
+                'perpetual', 'velo', 'velodrome', 'aero', 'aerodrome',
+                'ram', 'ramses', 'thena', 'chronos', 'solidly', 'solid',
+                'solidex', 'exa', 'excalibur', 'zap', 'zapper', 'debank',
+                'zerion', 'math', 'rabby', 'rainbow', 'phantom', 'backpack',
+                'solflare', 'spot', 'gem', 'genie', 'blur', 'opensea',
+                'looksrare', 'x2y2', 'sudo', 'sudoswap', 'nftx', 'nft20',
+                'fractional', 'tessera', 'party', 'szn', 'summon',
+                'uniswap', 'uni', 'sushi', 'sushiswap', 'pancakeswap',
+                'apeswap', 'bakery', 'burgerswap', 'cafeswap', 'cheeseswap',
+                'julswap', 'streetswap', 'thunderswap', 'tigerswap',
+                'pantherswap', 'lionswap', 'jaguarswap', 'leopardswap',
+                'cheetahswap', 'hyenaswap', 'wolveswap', 'foxswap',
+                'bearswap', 'pandaswap', 'koalaswap', 'slothswap',
+                'turtleswap', 'snakeswap', 'lizardswap', 'frogswap',
+                'toadswap', 'newtswap', 'salamanderswap', 'axolotlswap'
+            ];
+            const symbolLower = symbol.toLowerCase();
+            return invalidPatterns.some(pattern => symbolLower.includes(pattern));
+        };
+
+        const openModal = async (coin) => {
             elements.modalIcon.src = coin.image;
             elements.modalIcon.alt = coin.symbol;
-            elements.modalTitle.innerHTML = `${coin.name} <span>${coin.symbol.toUpperCase()}</span>`;
+            while (elements.modalTitle.firstChild) {
+                elements.modalTitle.removeChild(elements.modalTitle.firstChild);
+            }
+            const nameSpan = createElement('span');
+            nameSpan.textContent = coin.name + ' ';
+            const symbolSpan = createElement('span');
+            symbolSpan.textContent = coin.symbol.toUpperCase();
+            elements.modalTitle.appendChild(nameSpan);
+            elements.modalTitle.appendChild(symbolSpan);
             elements.modal.classList.add('active');
             document.body.style.overflow = 'hidden';
-            elements.tradingviewWidget.innerHTML = '';
+            while (elements.tradingviewWidget.firstChild) {
+                elements.tradingviewWidget.removeChild(elements.tradingviewWidget.firstChild);
+            }
+            const symbol = coin.symbol.toUpperCase();
+            const trySymbol = `${symbol}USD`;
             const script = document.createElement('script');
             script.src = 'https://s3.tradingview.com/external-embedding/embed-widget-advanced-chart.js';
             script.async = true;
-            script.innerHTML = JSON.stringify({
+            script.textContent = JSON.stringify({
                 "autosize": true,
-                "symbol": `COINBASE:${coin.symbol.toUpperCase()}USD`,
+                "symbol": trySymbol,
                 "interval": "D",
-                "timezone": "exchange",
+                "timezone": "Etc/UTC",
                 "theme": "dark",
                 "style": "1",
                 "locale": "en",
@@ -1244,7 +1765,9 @@
         const closeModal = () => {
             elements.modal.classList.remove('active');
             document.body.style.overflow = '';
-            elements.tradingviewWidget.innerHTML = '';
+            while (elements.tradingviewWidget.firstChild) {
+                elements.tradingviewWidget.removeChild(elements.tradingviewWidget.firstChild);
+            }
         };
 
         const filterCoins = () => {
