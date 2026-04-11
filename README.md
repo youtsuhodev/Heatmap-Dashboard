@@ -132,8 +132,8 @@ crypto-heatmap/
 ├── README.md           # Documentation
 ├── LICENSE             # MIT License
 └── screenshots/        # Screenshots (to add)
-    ├── desktop-view.png
-    ├── mobile-view.png
+    ├── dashboard.png
+    ├── phone-dashboard.png
     ├── search-feature.png
     ├── tradingview-modal.png
     └── hover-effects.png
