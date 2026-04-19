@@ -230,7 +230,7 @@ Contributions are welcome! 🙌
 
 ### 🎯 Roadmap
 - [x] Light mode
-- [ ] Personal watchlist
+- [X] Personal watchlist
 - [ ] Price alerts
 - [ ] More timeframes (7d, 30d, 1y)
 - [ ] Multi-currency (EUR, GBP, JPY)
