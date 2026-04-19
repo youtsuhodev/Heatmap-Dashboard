@@ -942,6 +942,62 @@
             color: var(--text-primary);
             margin-bottom: 8px;
         }
+
+        .watchlist-btn {
+            position: absolute;
+            top: 6px;
+            right: 6px;
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 4px;
+            z-index: 5;
+            opacity: 0.4;
+            transition: opacity 0.2s, transform 0.2s;
+            line-height: 1;
+        }
+
+        .watchlist-btn:hover {
+            opacity: 1;
+            transform: scale(1.2);
+        }
+
+        .watchlist-btn.active {
+            opacity: 1;
+        }
+
+        .watchlist-btn .material-icons {
+            font-size: 18px;
+            color: #facc15;
+        }
+
+        .watchlist-filter-btn {
+            padding: 8px 16px;
+            border: none;
+            background: transparent;
+            color: var(--text-secondary);
+            font-size: 13px;
+            font-weight: 500;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .watchlist-filter-btn:hover {
+            color: var(--text-primary);
+        }
+
+        .watchlist-filter-btn.active {
+            background: #facc15;
+            color: #111827;
+        }
+
+        .watchlist-filter-btn .material-icons {
+            font-size: 16px;
+        }
     </style>
     <script src="https://unpkg.com/lightweight-charts@4.1.0/dist/lightweight-charts.standalone.production.js"></script>
 </head>
@@ -968,6 +1024,9 @@
                     <button class="filter-btn" data-limit="10">Top 10</button>
                     <button class="filter-btn active" data-limit="50">Top 50</button>
                     <button class="filter-btn" data-limit="100">Top 100</button>
+                    <button class="watchlist-filter-btn" id="watchlistFilterBtn">
+                        <span class="material-icons">star</span> Watchlist
+                    </button>
                 </div>
                 <button class="theme-toggle" id="themeToggle" aria-label="Toggle theme">
                     <span class="material-icons" id="themeIcon">light_mode</span>
@@ -1070,7 +1129,25 @@
             searchQuery: '',
             loading: false,
             ws: null,
-            subscribedAssets: new Set()
+            subscribedAssets: new Set(),
+            watchlist: JSON.parse(localStorage.getItem('cryptoWatchlist') || '[]'),
+            showWatchlistOnly: false
+        };
+
+        const saveWatchlist = () => {
+            localStorage.setItem('cryptoWatchlist', JSON.stringify(state.watchlist));
+        };
+
+        const toggleWatchlistCoin = (coinId, e) => {
+            e.stopPropagation();
+            const idx = state.watchlist.indexOf(coinId);
+            if (idx > -1) {
+                state.watchlist.splice(idx, 1);
+            } else {
+                state.watchlist.push(coinId);
+            }
+            saveWatchlist();
+            filterCoins();
         };
 
         const initWebSocket = () => {
@@ -1635,6 +1712,12 @@
                 block.dataset.symbol = coin.symbol;
                 block.dataset.name = coin.name;
 
+                const starBtn = createElement('button', `watchlist-btn ${state.watchlist.includes(coin.id) ? 'active' : ''}`);
+                const starIcon = createElement('span', 'material-icons', state.watchlist.includes(coin.id) ? 'star' : 'star_border');
+                starBtn.appendChild(starIcon);
+                starBtn.addEventListener('click', (e) => toggleWatchlistCoin(coin.id, e));
+                block.appendChild(starBtn);
+
                 const topSection = createElement('div');
                 const coinHeader = createElement('div', 'coin-header');
                 const coinImg = createElement('img', 'coin-icon');
@@ -1839,14 +1922,17 @@
 
         const filterCoins = () => {
             const query = state.searchQuery.toLowerCase().trim();
-            if (!query) {
-                state.filteredCoins = state.coins;
-            } else {
-                state.filteredCoins = state.coins.filter(coin => 
+            let filtered = state.coins;
+            if (state.showWatchlistOnly) {
+                filtered = filtered.filter(coin => state.watchlist.includes(coin.id));
+            }
+            if (query) {
+                filtered = filtered.filter(coin => 
                     coin.name.toLowerCase().includes(query) ||
                     coin.symbol.toLowerCase().includes(query)
                 );
             }
+            state.filteredCoins = filtered;
             renderHeatmap();
         };
 
@@ -1906,6 +1992,12 @@
             elements.refreshBtn.addEventListener('click', () => {
                 loadData();
                 closeMobileMenu();
+            });
+            const watchlistBtn = document.getElementById('watchlistFilterBtn');
+            watchlistBtn.addEventListener('click', () => {
+                state.showWatchlistOnly = !state.showWatchlistOnly;
+                watchlistBtn.classList.toggle('active', state.showWatchlistOnly);
+                filterCoins();
             });
             elements.modalClose.addEventListener('click', closeModal);
             elements.modal.addEventListener('click', (e) => {
