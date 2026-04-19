@@ -229,7 +229,7 @@ Contributions are welcome! 🙌
 5. Open a Pull Request
 
 ### 🎯 Roadmap
-- [ ] Light mode
+- [x] Light mode
 - [ ] Personal watchlist
 - [ ] Price alerts
 - [ ] More timeframes (7d, 30d, 1y)
