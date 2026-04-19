@@ -20,6 +20,37 @@
             --shadow-color: rgba(0, 0, 0, 0.5);
         }
 
+        [data-theme="light"] {
+            --bg-primary: #f3f4f6;
+            --bg-secondary: #ffffff;
+            --bg-tertiary: #e5e7eb;
+            --text-primary: #111827;
+            --text-secondary: #6b7280;
+            --accent-green: #059669;
+            --accent-red: #dc2626;
+            --accent-blue: #2563eb;
+            --border-color: #d1d5db;
+            --shadow-color: rgba(0, 0, 0, 0.1);
+        }
+
+        .theme-toggle {
+            padding: 10px;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            color: var(--text-primary);
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .theme-toggle:hover {
+            background: var(--border-color);
+            border-color: var(--accent-blue);
+        }
+
         * {
             margin: 0;
             padding: 0;
@@ -448,6 +479,10 @@
             backdrop-filter: blur(4px);
             padding: 8px;
             transform: translateY(100%);
+        }
+
+        [data-theme="light"] .coin-details {
+            background: rgba(255, 255, 255, 0.9);
             transition: transform 0.3s ease;
             font-size: 11px;
         }
@@ -934,6 +969,9 @@
                     <button class="filter-btn active" data-limit="50">Top 50</button>
                     <button class="filter-btn" data-limit="100">Top 100</button>
                 </div>
+                <button class="theme-toggle" id="themeToggle" aria-label="Toggle theme">
+                    <span class="material-icons" id="themeIcon">light_mode</span>
+                </button>
                 <button class="refresh-btn" id="refreshBtn">
                     <span class="refresh-icon material-icons">refresh</span>
                     <span>Refresh</span>
@@ -991,6 +1029,33 @@
     </div>
 
     <script>
+        // Theme toggle
+        (function() {
+            const saved = localStorage.getItem('theme');
+            if (saved === 'light') document.documentElement.setAttribute('data-theme', 'light');
+        })();
+
+        document.addEventListener('DOMContentLoaded', function() {
+            const toggle = document.getElementById('themeToggle');
+            const icon = document.getElementById('themeIcon');
+            function updateIcon() {
+                const isLight = document.documentElement.getAttribute('data-theme') === 'light';
+                icon.textContent = isLight ? 'dark_mode' : 'light_mode';
+            }
+            updateIcon();
+            toggle.addEventListener('click', function() {
+                const isLight = document.documentElement.getAttribute('data-theme') === 'light';
+                if (isLight) {
+                    document.documentElement.removeAttribute('data-theme');
+                    localStorage.setItem('theme', 'dark');
+                } else {
+                    document.documentElement.setAttribute('data-theme', 'light');
+                    localStorage.setItem('theme', 'light');
+                }
+                updateIcon();
+            });
+        });
+
         const CONFIG = {
             API_URL: 'https://api.coingecko.com/api/v3',
             DEFAULT_LIMIT: 50,
